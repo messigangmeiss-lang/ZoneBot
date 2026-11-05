@@ -56,8 +56,14 @@ async def mandar_log(texto, color=discord.Color.greyple()):
 @bot.event
 async def on_ready():
     print(f"Bot conectado como {bot.user}")
-    try:
+        try:
         guild = discord.Object(id=GUILD_ID)
+        # LIMPIEZA UNA SOLA VEZ - borra los fantasmas /misnicks y /list
+        bot.tree.clear_commands(guild=guild)
+        await bot.tree.sync(guild=guild)
+        bot.tree.clear_commands(guild=None)
+        await bot.tree.sync()
+        # Ahora vuelve a subir los buenos
         bot.tree.copy_global_to(guild=guild)
         synced = await bot.tree.sync(guild=guild)
         print(f"Sincronizados {len(synced)} comandos")
