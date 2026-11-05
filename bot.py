@@ -56,7 +56,7 @@ async def mandar_log(texto, color=discord.Color.greyple()):
 @bot.event
 async def on_ready():
     print(f"Bot conectado como {bot.user}")
-        try:
+    try:
         guild = discord.Object(id=GUILD_ID)
         # Ahora vuelve a subir los buenos
         bot.tree.copy_global_to(guild=guild)
