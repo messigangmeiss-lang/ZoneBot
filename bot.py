@@ -310,6 +310,40 @@ def api_delete():
 def run_web():
     port = int(os.getenv("PORT", "10000"))
     app.run(host="0.0.0.0", port=port)
+@bot.tree.command(name="mynicks", description="Ver tus nicks registrados")
+async def mynicks(interaction: discord.Interaction):
+    data = cargar()
+    mis_nicks = [r for r in data if r.get("user") == str(interaction.user.id)]
+    if not mis_nicks:
+        embed = discord.Embed(title="📋 Tus nicks", description="No tienes ningún nick registrado todavía.", color=0xe74c3c)
+        embed.set_thumbnail(url=interaction.user.display_avatar.url)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    lista = "\n".join([f"**{i+1}.** {r.get('nick','')} — {r.get('fecha','')}" for i, r in enumerate(mis_nicks)])
+    embed = discord.Embed(title="📋 Tus nicks registrados", description=lista, color=0x3498db)
+    embed.add_field(name="📊 Total:", value=f"{len(mis_nicks)} nicks", inline=False)
+    embed.set_thumbnail(url=interaction.user.display_avatar.url)
+    embed.set_footer(text="ZoneBot • Registro de nicks")
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="unregister", description="Borrar un nick registrado")
+async def unregister(interaction: discord.Interaction, nick: str):
+    data = cargar()
+    antes = len(data)
+    data = [r for r in data if not (r.get("nick","").lower() == nick.lower() and r.get("user") == str(interaction.user.id))]
+    if len(data) == antes:
+        embed = discord.Embed(title="❌ No encontrado", description=f"No tienes registrado el nick **{nick}**.", color=0xe74c3c)
+        embed.set_thumbnail(url=interaction.user.display_avatar.url)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    guardar(data)
+    embed = discord.Embed(title="🗑️ Nick eliminado", color=0xe67e22)
+    embed.add_field(name="🧾 Nick:", value=nick, inline=False)
+    embed.add_field(name="👤 Usuario:", value=f"@{interaction.user.name}", inline=False)
+    embed.set_thumbnail(url=interaction.user.display_avatar.url)
+    embed.set_footer(text="ZoneBot • Registro de nicks")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
 
 if __name__ == "__main__":
     threading.Thread(target=run_web, daemon=True).start()
