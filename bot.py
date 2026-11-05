@@ -10,8 +10,8 @@ from openpyxl import Workbook
 from flask import Flask, request, jsonify, render_template_string
 
 TOKEN = os.getenv("TOKEN") or os.getenv("DISCORD_TOKEN")
-GUILD_ID = int(os.getenv("GUILD_ID", "1567715818366832650"))
-LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "1567760248654143609"))
+GUILD_ID = int(os.getenv("GUILD_ID", "1564463273615560706"))
+LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "1567935320803250227"))
 ADMIN_KEY = os.getenv("ADMIN_KEY", "zone123") # clave para borrar desde la web
 
 intents = discord.Intents.default()
@@ -58,11 +58,6 @@ async def on_ready():
     print(f"Bot conectado como {bot.user}")
         try:
         guild = discord.Object(id=GUILD_ID)
-        # LIMPIEZA UNA SOLA VEZ - borra los fantasmas /misnicks y /list
-        bot.tree.clear_commands(guild=guild)
-        await bot.tree.sync(guild=guild)
-        bot.tree.clear_commands(guild=None)
-        await bot.tree.sync()
         # Ahora vuelve a subir los buenos
         bot.tree.copy_global_to(guild=guild)
         synced = await bot.tree.sync(guild=guild)
