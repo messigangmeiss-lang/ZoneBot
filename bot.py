@@ -182,7 +182,7 @@ header{max-width:1100px;margin:0 auto;padding:24px 20px 6px;display:flex;justify
 .hero{background:linear-gradient(90deg,#7f1d1d,#991b1b,#dc2626);background-size:200% 100%;animation:gradientMove 5s ease infinite;border-radius:16px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;animation:fadeUp .5s ease, gradientMove 5s ease infinite}
 .hero b{font-size:18px;display:block}
 .hero span{font-size:13px;opacity:.9}
-.heroBtn{background:#fff;color:#991b1b;border:none;padding:10px 16px;border-radius:999px;font-weight:800;cursor:pointer;font-size:13px;transition:.2s}
+.heroBtn{background:#fff;color:#991b1b;border:none;padding:10px 16px;border-radius:999px;font-weight:800;cursor:pointer;font-size:13px}
 .heroBtn:hover{transform:scale(1.05)}
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin:14px 0 16px}
 @media(max-width:700px){.stats{grid-template-columns:1fr 1fr}.main{grid-template-columns:1fr !important}.hero{flex-direction:column;align-items:flex-start}}
@@ -191,14 +191,6 @@ header{max-width:1100px;margin:0 auto;padding:24px 20px 6px;display:flex;justify
 .card b{font-size:28px;display:block;line-height:1.1}
 .card span{color:#a8a29e;font-size:12px}
 .card small{color:#fca5a5;font-size:12px;font-weight:700}
-.checker{background:#151010;border:1px solid #2a1a1a;border-radius:16px;padding:16px;margin-bottom:16px;animation:fadeUp .6s ease}
-.checker h3{font-size:15px;margin-bottom:10px}
-.checkRow{display:flex;gap:8px}
-.checkRow input{flex:1;padding:12px 14px;border-radius:12px;border:1px solid #3f1d1d;background:#1c0a0a;color:#fff;outline:none;font-size:14px}
-.checkRow input:focus{border-color:#ef4444}
-.checkBtn{background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;border:none;padding:12px 18px;border-radius:12px;font-weight:800;cursor:pointer;white-space:nowrap}
-.checkBtn:hover{transform:scale(1.03)}
-#checkResult{margin-top:10px;font-size:14px;font-weight:700;min-height:20px}
 .search{width:100%;padding:13px 15px;border-radius:12px;border:1px solid #3f1d1d;background:#1c0a0a;color:#fff;font-size:14px;outline:none;margin-bottom:16px}
 .search:focus{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.25)}
 .main{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
@@ -219,8 +211,8 @@ header{max-width:1100px;margin:0 auto;padding:24px 20px 6px;display:flex;justify
 .nick{display:flex;justify-content:space-between;align-items:center;padding:13px 8px;border-top:1px solid #262020;gap:10px}
 .nick:hover{background:#1f1212;border-radius:10px}
 .nick b{font-size:15px}
-.nick small{color:#888;font-size:12px}
-.actions{display:flex;gap:6px}
+.nick small{color:#fca5a5;font-size:12px;font-weight:600;background:#2a0f0f;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.actions{display:flex;gap:6px;align-items:center}
 .btnCopy{background:#262020;color:#fff;border:1px solid #3a3a3a;padding:7px 11px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:700}
 .btnCopy:hover{background:#fff;color:#000}
 .btnDel{background:#2a1212;color:#fca5a5;border:none;padding:7px 12px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:700}
@@ -229,8 +221,8 @@ header{max-width:1100px;margin:0 auto;padding:24px 20px 6px;display:flex;justify
 @media(max-width:700px){.bottom{grid-template-columns:1fr}}
 .box{background:#151010;border:1px solid #2a1a1a;border-radius:16px;padding:16px;animation:fadeUp .7s ease}
 .box h3{font-size:15px;margin-bottom:12px}
-.recentItem{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #262020;font-size:14px}
-.recentItem small{color:#888}
+.recentItem{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #262020;font-size:14px;gap:8px;flex-wrap:wrap}
+.recentItem small{color:#fca5a5}
 .step{display:flex;gap:10px;margin-bottom:12px;font-size:14px;line-height:1.4}
 .stepNum{background:linear-gradient(90deg,#ef4444,#dc2626);width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px}
 .step code{background:#262020;padding:2px 7px;border-radius:6px;color:#fca5a5;font-size:12px}
@@ -248,7 +240,6 @@ footer{text-align:center;color:#555;font-size:12px;padding:20px}
 <div class="card"><b id="topUser" style="font-size:20px">-</b><span>👑 Top Usuario</span><br><small id="topCount"></small></div>
 <div class="card"><b style="color:#22c55e">Online</b><span>Estado del Bot</span></div>
 </div>
-<div class="checker"><h3>🔍 ¿Este nick está libre?</h3><div class="checkRow"><input id="checkInput" placeholder="Escribe un nick, ej: test555" onkeydown="if(event.key==='Enter') checkNick()"><button class="checkBtn" onclick="checkNick()">Verificar</button></div><div id="checkResult"></div></div>
 <input id="search" class="search" placeholder="Buscar nick o usuario..." oninput="filtrar()">
 <div class="main">
 <div class="left"><h3>Usuarios</h3><div id="userList"></div></div>
@@ -256,7 +247,7 @@ footer{text-align:center;color:#555;font-size:12px;padding:20px}
 </div>
 <div class="bottom">
 <div class="box"><h3>🕒 Últimos nicks agregados</h3><div id="recentList"></div></div>
-<div class="box"><h3>📖 Cómo registrar tu nick</h3><div class="step"><span class="stepNum">1</span><span>Entra a Discord del clan ZONE</span></div><div class="step"><span class="stepNum">2</span><span>Escribe <code>/register nick: tu_nick</code></span></div><div class="step"><span class="stepNum">3</span><span>Listo! Aparece aquí al instante 🔥</span></div><p style="color:#888;font-size:12px;margin-top:8px">Tip: Usa el buscador de arriba para ver si tu nick ya existe antes de registrarlo.</p></div>
+<div class="box"><h3>📖 Cómo registrar tu nick</h3><div class="step"><span class="stepNum">1</span><span>Entra a Discord del clan ZONE</span></div><div class="step"><span class="stepNum">2</span><span>Escribe <code>/register nick: tu_nick</code></span></div><div class="step"><span class="stepNum">3</span><span>Listo! Aparece aquí al instante 🔥</span></div><p style="color:#888;font-size:12px;margin-top:8px">Cada nick ahora guarda fecha y hora exacta de registro.</p></div>
 </div>
 <footer>ZONEBOT • Hecho para la comunidad de Zone</footer>
 </div>
@@ -271,11 +262,6 @@ if(!selected || !users[selected]){ selected=Object.keys(users)[0]||null; }
 render(); renderRecent(); }
 function getUsers(){ let users={}; datos.forEach(d=>{ let k=d.name||d.user; users[k]=users[k]||[]; users[k].push(d)}); return users; }
 function filtrar(){ filterQ=document.getElementById('search').value.toLowerCase(); render(); }
-function checkNick(){ let v=document.getElementById('checkInput').value.trim().toLowerCase(); let res=document.getElementById('checkResult');
-if(!v){ res.innerText='Escribe un nick primero pe'; res.style.color='#fca5a5'; return; }
-let found=datos.find(d=>d.nick.toLowerCase()===v);
-if(found){ res.innerHTML='❌ Ocupado por <b>'+(found.name||found.user)+'</b>'; res.style.color='#fca5a5'; }
-else{ res.innerHTML='✅ Libre! Puedes registrarlo con /register'; res.style.color='#4ade80'; } }
 function render(){
 let users=getUsers(); let filtered={}; for(let u in users){ let nicks=users[u].filter(n=>(n.nick+' '+n.name).toLowerCase().includes(filterQ)); if(nicks.length) filtered[u]=nicks; }
 let usersSorted=Object.keys(filtered).sort((a,b)=>filtered[b].length-filtered[a].length);
@@ -283,9 +269,9 @@ let html=''; usersSorted.forEach((u,i)=>{ html+=`<div class="userItem ${u===sele
 document.getElementById('userList').innerHTML=html||'<p style="color:#888;font-size:13px">No hay usuarios</p>';
 if(!selected || !filtered[selected]){ selected=usersSorted[0]||null; if(!selected){ document.getElementById('detail').innerHTML='<div class="empty">Aun no hay nicks<br><small>Registra uno en Discord con /register</small></div>'; return; } }
 let nicks=filtered[selected]||[];
-document.getElementById('detail').innerHTML=`<div class="rightHead"><div><h2>${selected}</h2><p>${nicks.length} nicks • Click en Actualizar para recargar</p></div><button class="btnUpdate" onclick="actualizar()">↻ Actualizar</button></div>` + nicks.map(n=>`<div class="nick"><span><b>${n.nick}</b> ${n.fecha?`<small>• ${n.fecha}</small>`:''}</span><div class="actions"><button class="btnCopy" onclick="copiar('${n.nick}',this)">Copiar</button><button class="btnDel" onclick="borrar('${n.nick}')">Eliminar</button></div></div>`).join('');
+document.getElementById('detail').innerHTML=`<div class="rightHead"><div><h2>${selected}</h2><p>${nicks.length} nicks • Click en Actualizar para recargar</p></div><button class="btnUpdate" onclick="actualizar()">↻ Actualizar</button></div>` + nicks.map(n=>`<div class="nick"><span><b>${n.nick}</b></span><div class="actions">${n.fecha?`<small>📅 ${n.fecha}</small>`:''}<button class="btnCopy" onclick="copiar('${n.nick}',this)">Copiar</button><button class="btnDel" onclick="borrar('${n.nick}')">Eliminar</button></div></div>`).join('');
 }
-function renderRecent(){ let last=[...datos].slice(-3).reverse(); document.getElementById('recentList').innerHTML=last.length? last.map(d=>`<div class="recentItem"><b>${d.nick}</b><small>${d.name||d.user} ${d.fecha?'• '+d.fecha:''}</small></div>`).join(''):'<p style="color:#888;font-size:13px">Aún no hay nicks</p>'; }
+function renderRecent(){ let last=[...datos].slice(-3).reverse(); document.getElementById('recentList').innerHTML=last.length? last.map(d=>`<div class="recentItem"><b>${d.nick}</b><small>${d.name||d.user} ${d.fecha?'• 📅 '+d.fecha:''}</small></div>`).join(''):'<p style="color:#888;font-size:13px">Aún no hay nicks</p>'; }
 function selectUser(u){ selected=u; render(); }
 async function actualizar(){ await load(); }
 function copiar(nick,btn){ navigator.clipboard.writeText(nick); let o=btn.innerText; btn.innerText='Copiado!'; setTimeout(()=>btn.innerText=o,1000); }
