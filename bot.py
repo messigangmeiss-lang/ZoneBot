@@ -9,12 +9,17 @@ from pathlib import Path
 from openpyxl import Workbook
 from flask import Flask, request, jsonify, render_template_string
 
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.getenv("TOKEN") or os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID", "1567715818366832650"))
 LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "1567760248654143609"))
 ADMIN_KEY = os.getenv("ADMIN_KEY", "zone123") # clave para borrar desde la web
 
 intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+intents.presences = True
+
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 nicks_file = Path("nicks.json")
 
