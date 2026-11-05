@@ -3,17 +3,19 @@ from discord import app_commands
 from discord.ext import commands
 import json
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 from openpyxl import Workbook
+from flask import Flask, request, jsonify, render_template_string
 
 TOKEN = os.getenv("TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID", "1567715818366832650"))
 LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "1567760248654143609"))
+ADMIN_KEY = os.getenv("ADMIN_KEY", "zone123") # clave para borrar desde la web
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
-
 nicks_file = Path("nicks.json")
 
 def cargar():
@@ -22,10 +24,14 @@ def cargar():
     try:
         with open(nicks_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Si es diccionario viejo, lo convertimos a lista
-            if isinstance(data, dict):
-                return [{"nick": k, "user": v.get("user",""), "name": v.get("name",""), "fecha": v.get("fecha","")} for k,v in data.items()]
-            return data
+            # Compatibilidad: convierte formato viejo a nuevo
+            out = []
+            for r in data:
+                if "registrado_por" in r:
+                    out.append({"nick": r.get("nick",""), "user": str(r.get("user_id","")), "name": r.get("registrado_por",""), "fecha": r.get("fecha","")})
+                else:
+                    out.append(r)
+            return out
     except:
         return []
 
@@ -41,6 +47,7 @@ async def mandar_log(texto, color=discord.Color.greyple()):
         embed = discord.Embed(description=texto, color=color)
         await canal.send(embed=embed)
 
+# ========== BOT COMMANDS (igual que antes) ==========
 @bot.event
 async def on_ready():
     print(f"Bot conectado como {bot.user}")
@@ -144,4 +151,74 @@ async def export(interaction: discord.Interaction):
     await interaction.response.send_message("📥 Aquí está tu backup en Excel:", file=discord.File(archivo), ephemeral=True)
     await mandar_log(f"📥 **{interaction.user.mention}** descargó el backup en Excel ({len(data)} nicks)", discord.Color.blue())
 
-bot.run(TOKEN)
+# ========== DASHBOARD WEB - ESTO ES LO QUE MANTIENE PRENDIDO EL BOT ==========
+app = Flask(__name__)
+
+HTML = """
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZoneBot Dashboard</title>
+<style>
+body{background:#0f0f12;color:#fff;font-family:Arial;padding:20px}
+h1{font-size:28px} .cards{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
+.card{background:#1a1a20;border:1px solid #2a2a33;border-radius:12px;padding:16px;min-width:160px;flex:1}
+.card b{font-size:28px;display:block} .card span{color:#aaa;font-size:13px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#1a1a20;color:#fff;margin:10px 0}
+.user{background:#1a1a20;border:1px solid #2a2a33;border-radius:12px;padding:14px;margin:10px 0}
+.user h3{margin:0 0 8px 0} .nick{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid #2a2a33}
+button{background:#ff3b30;color:#fff;border:none;padding:6px 12px;border-radius:8px;cursor:pointer}
+</style></head><body>
+<h1>🎮 ZoneBot Dashboard</h1><p style="color:#aaa">Nicks registrados en vivo desde Discord</p>
+<div class="cards">
+<div class="card"><b id="totalUsers">0</b><span>Usuarios registrados</span></div>
+<div class="card"><b id="totalNicks">0</b><span>Nicks totales</span></div>
+<div class="card"><b id="status">🟢 Online</b><span>Estado del Bot</span></div>
+</div>
+<input id="search" placeholder="🔍 Buscar nick o usuario..." oninput="filtrar()">
+<div id="lista"></div>
+<script>
+let datos=[];
+async function load(){ let r=await fetch('/api/nicks'); datos=await r.json();
+document.getElementById('totalNicks').innerText=datos.length;
+let users={}; datos.forEach(d=>{users[d.name||d.user]=users[d.name||d.user]||[]; users[d.name||d.user].push(d)});
+document.getElementById('totalUsers').innerText=Object.keys(users).length;
+render(users); }
+function render(users){ let q=document.getElementById('search').value.toLowerCase(); let html='';
+for(let u in users){ let nicks=users[u].filter(n=> (n.nick+n.name).toLowerCase().includes(q)); if(!nicks.length) continue;
+html+=`<div class="user"><h3>👤 ${u} <span style="color:#aaa;font-size:13px">(${nicks.length} nicks)</span></h3>`+nicks.map(n=>`<div class="nick"><span><b>${n.nick}</b> <small style="color:#888"> - ${n.fecha||''}</small></span><button onclick="borrar('${n.nick}')">Eliminar</button></div>`).join('')+`</div>`; }
+document.getElementById('lista').innerHTML=html||'<p>No hay nicks</p>'; }
+function filtrar(){ let users={}; datos.forEach(d=>{users[d.name||d.user]=users[d.name||d.user]||[]; users[d.name||d.user].push(d)}); render(users); }
+async function borrar(nick){ let key=prompt('Clave de admin para borrar:'); if(!key) return;
+let r=await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nick,key})});
+let j=await r.json(); alert(j.msg); load(); }
+load(); setInterval(load,10000);
+</script></body></html>
+"""
+
+@app.route("/")
+def home():
+    return render_template_string(HTML)
+
+@app.route("/api/nicks")
+def api_nicks():
+    return jsonify(cargar())
+
+@app.route("/api/delete", methods=["POST"])
+def api_delete():
+    d = request.json or {}
+    if d.get("key") != ADMIN_KEY:
+        return jsonify({"msg": "❌ Clave incorrecta"}), 403
+    data = cargar()
+    for i, r in enumerate(data):
+        if r.get("nick","").lower() == d.get("nick","").lower():
+            del data[i]
+            guardar(data)
+            return jsonify({"msg": f"✅ Borrado {d.get('nick')}"})
+    return jsonify({"msg": "❌ No existe"}), 404
+
+def run_web():
+    port = int(os.getenv("PORT", "10000"))
+    app.run(host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    threading.Thread(target=run_web, daemon=True).start()
+    bot.run(TOKEN)
