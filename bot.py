@@ -165,42 +165,51 @@ HTML = """
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0b0505;color:#fff;font-family:'Inter',Arial,sans-serif;min-height:100vh;overflow-x:hidden}
-@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulseDot{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(34,197,94,.5)}50%{transform:scale(1.15);box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+body{background:#0b0505;color:#fff;font-family:'Inter',Arial,sans-serif;min-height:100vh}
+@keyframes fadeUp{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
 @keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-@keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(239,68,68,.25)}50%{box-shadow:0 0 35px rgba(239,68,68,.45)}}
+@keyframes pulseDot{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(34,197,94,.5)}50%{transform:scale(1.15);box-shadow:0 0 0 6px rgba(34,197,94,0)}}
 .topbar{height:4px;background:linear-gradient(90deg,#ef4444,#f97316,#dc2626,#ef4444);background-size:300% 100%;animation:gradientMove 4s ease infinite}
-header{max-width:1000px;margin:0 auto;padding:28px 20px 10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;animation:fadeUp .5s ease}
-.logo{font-size:34px;font-weight:900;letter-spacing:-1px}
+header{max-width:1100px;margin:0 auto;padding:26px 20px 8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;animation:fadeUp .4s ease}
+.logo{font-size:32px;font-weight:900;letter-spacing:-1px}
 .logo span{background:linear-gradient(90deg,#ef4444,#f97316,#fca5a5);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:gradientMove 3s ease infinite}
 .badge{display:flex;align-items:center;gap:7px;background:#14532d;color:#bbf7d0;font-weight:800;font-size:12px;padding:7px 13px;border-radius:999px}
 .dot{width:9px;height:9px;background:#22c55e;border-radius:50%;animation:pulseDot 1.8s infinite}
-.sub{max-width:1000px;margin:0 auto;padding:0 20px 18px;color:#a8a29e;font-size:14px;animation:fadeUp .6s ease}
-.wrap{max-width:1000px;margin:0 auto;padding:0 20px 40px}
-.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:18px 0}
-@media(max-width:600px){.stats{grid-template-columns:1fr}}
-.card{background:linear-gradient(145deg,#1c0a0a,#160707);border:1px solid #3f1d1d;border-radius:16px;padding:18px;animation:fadeUp .7s ease;transition:.25s}
-.card:hover{transform:translateY(-4px);border-color:#ef4444;animation:glowPulse 1.5s infinite}
-.card b{font-size:32px;display:block;line-height:1}
+.sub{max-width:1100px;margin:0 auto;padding:0 20px 16px;color:#a8a29e;font-size:14px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px 40px}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:14px 0 18px}
+@media(max-width:700px){.stats{grid-template-columns:1fr}.main{grid-template-columns:1fr !important}}
+.card{background:linear-gradient(145deg,#1c0a0a,#160707);border:1px solid #3f1d1d;border-radius:16px;padding:18px;animation:fadeUp .5s ease;transition:.25s}
+.card:hover{transform:translateY(-3px);border-color:#ef4444}
+.card b{font-size:30px;display:block}
 .card span{color:#a8a29e;font-size:13px}
-.search{width:100%;padding:14px 16px;border-radius:14px;border:1px solid #3f1d1d;background:#1c0a0a;color:#fff;font-size:15px;outline:none;margin:6px 0 18px;transition:.2s;animation:fadeUp .8s ease}
+.search{width:100%;padding:13px 15px;border-radius:12px;border:1px solid #3f1d1d;background:#1c0a0a;color:#fff;font-size:14px;outline:none;margin-bottom:16px}
 .search:focus{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.25)}
-.user{background:#151010;border:1px solid #2a1a1a;border-radius:16px;padding:16px;margin:14px 0;animation:fadeUp .6s ease;transition:.2s}
-.user:hover{border-color:#7f1d1d}
-.user-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
-.user-head h3{font-size:17px}
-.pill{background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:700}
-.nick{display:flex;justify-content:space-between;align-items:center;padding:12px 10px;border-top:1px solid #262020;gap:10px;transition:.2s}
+.main{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+.left{background:#151010;border:1px solid #2a1a1a;border-radius:16px;padding:14px;animation:fadeUp .6s ease}
+.left h3{font-size:15px;margin-bottom:12px}
+.userItem{padding:12px 12px;border-radius:12px;cursor:pointer;border:1px solid transparent;transition:.2s;margin-bottom:8px}
+.userItem:hover{background:#1f1212}
+.userItem.active{background:#2a0f0f;border-color:#ef4444}
+.userItem b{display:block;font-size:15px}
+.userItem small{color:#a8a29e;font-size:12px}
+.userItem.active small{color:#fca5a5}
+.right{background:#151010;border:1px solid #2a1a1a;border-radius:16px;padding:18px;min-height:340px;animation:fadeUp .6s ease}
+.rightHead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.rightHead h2{font-size:20px}
+.rightHead p{color:#a8a29e;font-size:13px;margin-top:4px}
+.btnUpdate{background:#262020;color:#fff;border:1px solid #3a3a3a;padding:9px 14px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:700;transition:.2s}
+.btnUpdate:hover{background:#ef4444;border-color:#ef4444;transform:scale(1.03)}
+.nick{display:flex;justify-content:space-between;align-items:center;padding:13px 8px;border-top:1px solid #262020;gap:10px}
 .nick:hover{background:#1f1212;border-radius:10px}
 .nick b{font-size:15px}
 .nick small{color:#888;font-size:12px}
 .actions{display:flex;gap:6px}
-.btnCopy{background:#262020;color:#fff;border:1px solid #3a3a3a;padding:7px 11px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:700;transition:.2s}
-.btnCopy:hover{background:#fff;color:#000;transform:scale(1.05)}
-.btn{background:#2a1212;color:#fca5a5;border:none;padding:7px 12px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:700;transition:.2s}
-.btn:hover{background:#ef4444;color:#fff;transform:scale(1.05)}
-.empty{text-align:center;color:#888;padding:40px}
+.btnCopy{background:#262020;color:#fff;border:1px solid #3a3a3a;padding:7px 11px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:700}
+.btnCopy:hover{background:#fff;color:#000}
+.btnDel{background:#2a1212;color:#fca5a5;border:none;padding:7px 12px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:700}
+.btnDel:hover{background:#ef4444;color:#fff}
+.empty{text-align:center;color:#888;padding:50px 10px}
 footer{text-align:center;color:#555;font-size:12px;padding:20px}
 </style></head><body>
 <div class="topbar"></div>
@@ -213,25 +222,39 @@ footer{text-align:center;color:#555;font-size:12px;padding:20px}
 <div class="card"><b style="color:#22c55e">Online</b><span>Estado del Bot</span></div>
 </div>
 <input id="search" class="search" placeholder="Buscar nick o usuario..." oninput="filtrar()">
-<div id="lista"></div>
+<div class="main">
+<div class="left"><h3>Usuarios</h3><div id="userList"></div></div>
+<div class="right" id="detail"></div>
+</div>
 <footer>ZONEBOT • Hecho para la comunidad de Zone</footer>
 </div>
 <script>
-let datos=[];
+let datos=[]; let selected=null; let filterQ='';
 async function load(){ let r=await fetch('/api/nicks'); datos=await r.json();
 document.getElementById('totalNicks').innerText=datos.length;
-let users={}; datos.forEach(d=>{users[d.name||d.user]=users[d.name||d.user]||[]; users[d.name||d.user].push(d)});
-document.getElementById('totalUsers').innerText=Object.keys(users).length;
-render(users); }
-function render(users){ let q=document.getElementById('search').value.toLowerCase(); let html='';
-for(let u in users){ let nicks=users[u].filter(n=> (n.nick+n.name).toLowerCase().includes(q)); if(!nicks.length) continue;
-html+=`<div class="user"><div class="user-head"><h3>${u}</h3><span class="pill">${nicks.length} nicks</span></div>`+nicks.map(n=>`<div class="nick"><span><b>${n.nick}</b> ${n.fecha?`<small>• ${n.fecha}</small>`:''}</span><div class="actions"><button class="btnCopy" onclick="copiar('${n.nick}',this)">Copiar</button><button class="btn" onclick="borrar('${n.nick}')">Eliminar</button></div></div>`).join('')+`</div>`; }
-document.getElementById('lista').innerHTML=html||'<div class="empty">Aun no hay nicks<br><small>Registra uno en Discord con /register</small></div>'; }
-function filtrar(){ let users={}; datos.forEach(d=>{users[d.name||d.user]=users[d.name||d.user]||[]; users[d.name||d.user].push(d)}); render(users); }
-function copiar(nick,btn){ navigator.clipboard.writeText(nick); let old=btn.innerText; btn.innerText='Copiado!'; setTimeout(()=>btn.innerText=old,1000); }
-async function borrar(nick){ let key=prompt('Clave de admin para borrar:'); if(!key) return;
-let r=await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nick,key})});
-let j=await r.json(); alert(j.msg); load(); }
+let users=getUsers(); document.getElementById('totalUsers').innerText=Object.keys(users).length;
+if(!selected || !users[selected]){ let keys=Object.keys(users); selected=keys[0]||null; }
+render(); }
+function getUsers(){ let users={}; datos.forEach(d=>{ let k=d.name||d.user; users[k]=users[k]||[]; users[k].push(d)}); return users; }
+function filtrar(){ filterQ=document.getElementById('search').value.toLowerCase(); render(); }
+function render(){
+let users=getUsers();
+let filtered={}; for(let u in users){ let nicks=users[u].filter(n=>(n.nick+' '+n.name).toLowerCase().includes(filterQ)); if(nicks.length) filtered[u]=nicks; }
+let html='';
+for(let u in filtered){ html+=`<div class="userItem ${u===selected?'active':''}" onclick="selectUser('${u.replace(/'/g,"")}')"><b>${u}</b><small>${filtered[u].length} nicks</small></div>`; }
+document.getElementById('userList').innerHTML=html||'<p style="color:#888;font-size:13px">No hay usuarios</p>';
+if(!selected || !filtered[selected]){
+  let keys=Object.keys(filtered); selected=keys[0]||null;
+  if(!selected){ document.getElementById('detail').innerHTML='<div class="empty">Aun no hay nicks<br><small>Registra uno en Discord con /register</small></div>'; return; }
+}
+let nicks=filtered[selected]||[];
+let totalHtml=`<div class="rightHead"><div><h2>${selected}</h2><p>${nicks.length} nicks • Click en Actualizar para recargar</p></div><button class="btnUpdate" onclick="actualizar()">↻ Actualizar</button></div>` + nicks.map(n=>`<div class="nick"><span><b>${n.nick}</b> ${n.fecha?`<small>• ${n.fecha}</small>`:''}</span><div class="actions"><button class="btnCopy" onclick="copiar('${n.nick}',this)">Copiar</button><button class="btnDel" onclick="borrar('${n.nick}')">Eliminar</button></div></div>`).join('');
+document.getElementById('detail').innerHTML=totalHtml;
+}
+function selectUser(u){ selected=u; render(); }
+async function actualizar(){ let btn=document.querySelector('.btnUpdate'); if(btn) btn.innerText='Actualizando...'; await load(); }
+function copiar(nick,btn){ navigator.clipboard.writeText(nick); let o=btn.innerText; btn.innerText='Copiado!'; setTimeout(()=>btn.innerText=o,1000); }
+async function borrar(nick){ let key=prompt('Clave de admin para borrar:'); if(!key) return; let r=await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nick,key})}); let j=await r.json(); alert(j.msg); load(); }
 load(); setInterval(load,10000);
 </script></body></html>
 """
