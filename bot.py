@@ -160,26 +160,52 @@ async def export(interaction: discord.Interaction):
 app = Flask(__name__)
 
 HTML = """
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZoneBot Dashboard</title>
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZONE - Nicks Registrados</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
-body{background:#0f0f12;color:#fff;font-family:Arial;padding:20px}
-h1{font-size:28px} .cards{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
-.card{background:#1a1a20;border:1px solid #2a2a33;border-radius:12px;padding:16px;min-width:160px;flex:1}
-.card b{font-size:28px;display:block} .card span{color:#aaa;font-size:13px}
-input{width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#1a1a20;color:#fff;margin:10px 0}
-.user{background:#1a1a20;border:1px solid #2a2a33;border-radius:12px;padding:14px;margin:10px 0}
-.user h3{margin:0 0 8px 0} .nick{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid #2a2a33}
-button{background:#ff3b30;color:#fff;border:none;padding:6px 12px;border-radius:8px;cursor:pointer}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0f;color:#fff;font-family:'Inter',Arial,sans-serif;min-height:100vh}
+.topbar{background:linear-gradient(90deg,#7c3aed,#a855f7,#ec4899);padding:2px}
+header{max-width:1000px;margin:0 auto;padding:28px 20px 10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.logo{font-size:32px;font-weight:900;letter-spacing:-1px}
+.logo span{background:linear-gradient(90deg,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.badge{background:#22c55e;color:#000;font-weight:800;font-size:12px;padding:6px 12px;border-radius:999px}
+.sub{max-width:1000px;margin:0 auto;padding:0 20px 18px;color:#9ca3af;font-size:14px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 40px}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:18px 0}
+@media(max-width:600px){.stats{grid-template-columns:1fr}}
+.card{background:#15151d;border:1px solid #26262f;border-radius:16px;padding:18px}
+.card b{font-size:32px;display:block;line-height:1}
+.card span{color:#9ca3af;font-size:13px}
+.card small{font-size:28px}
+.search{width:100%;padding:14px 16px;border-radius:14px;border:1px solid #2e2e3a;background:#15151d;color:#fff;font-size:15px;outline:none;margin:6px 0 18px}
+.search:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.25)}
+.user{background:#15151d;border:1px solid #26262f;border-radius:16px;padding:16px;margin:14px 0}
+.user-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.user-head h3{font-size:17px}
+.pill{background:#2e1065;color:#c4b5fd;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.nick{display:flex;justify-content:space-between;align-items:center;padding:12px 10px;border-top:1px solid #26262f;gap:10px}
+.nick b{font-size:15px}
+.nick small{color:#888;font-size:12px}
+.btn{background:#26262f;color:#fca5a5;border:none;padding:7px 12px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:700}
+.btn:hover{background:#ef4444;color:#fff}
+.empty{text-align:center;color:#888;padding:40px}
+footer{text-align:center;color:#555;font-size:12px;padding:20px}
 </style></head><body>
-<h1>🎮 ZoneBot Dashboard</h1><p style="color:#aaa">Nicks registrados en vivo desde Discord</p>
-<div class="cards">
-<div class="card"><b id="totalUsers">0</b><span>Usuarios registrados</span></div>
-<div class="card"><b id="totalNicks">0</b><span>Nicks totales</span></div>
-<div class="card"><b id="status">🟢 Online</b><span>Estado del Bot</span></div>
+<div class="topbar"></div>
+<header><div class="logo">🎮 ZONE<span>BOT</span></div><div class="badge">● ONLINE</div></header>
+<p class="sub">Nicks registrados en vivo desde Discord • Actualiza solo cada 10 segundos</p>
+<div class="wrap">
+<div class="stats">
+<div class="card"><b id="totalUsers">0</b><span>👥 Usuarios registrados</span></div>
+<div class="card"><b id="totalNicks">0</b><span>🏷️ Nicks totales</span></div>
+<div class="card"><b>🟢 <small>Online</small></b><span>Estado del Bot</span></div>
 </div>
-<input id="search" placeholder="🔍 Buscar nick o usuario..." oninput="filtrar()">
+<input id="search" class="search" placeholder="🔍 Buscar nick o usuario..." oninput="filtrar()">
 <div id="lista"></div>
+<footer>ZONEBOT • Hecho para la comunidad de Zone</footer>
+</div>
 <script>
 let datos=[];
 async function load(){ let r=await fetch('/api/nicks'); datos=await r.json();
@@ -189,8 +215,8 @@ document.getElementById('totalUsers').innerText=Object.keys(users).length;
 render(users); }
 function render(users){ let q=document.getElementById('search').value.toLowerCase(); let html='';
 for(let u in users){ let nicks=users[u].filter(n=> (n.nick+n.name).toLowerCase().includes(q)); if(!nicks.length) continue;
-html+=`<div class="user"><h3>👤 ${u} <span style="color:#aaa;font-size:13px">(${nicks.length} nicks)</span></h3>`+nicks.map(n=>`<div class="nick"><span><b>${n.nick}</b> <small style="color:#888"> - ${n.fecha||''}</small></span><button onclick="borrar('${n.nick}')">Eliminar</button></div>`).join('')+`</div>`; }
-document.getElementById('lista').innerHTML=html||'<p>No hay nicks</p>'; }
+html+=`<div class="user"><div class="user-head"><h3>👤 ${u}</h3><span class="pill">${nicks.length} nicks</span></div>`+nicks.map(n=>`<div class="nick"><span><b>${n.nick}</b> <small>• ${n.fecha||'sin fecha'}</small></span><button class="btn" onclick="borrar('${n.nick}')">Eliminar</button></div>`).join('')+`</div>`; }
+document.getElementById('lista').innerHTML=html||'<div class="empty">😴 Aún no hay nicks<br><small>Registra uno en Discord con /register</small></div>'; }
 function filtrar(){ let users={}; datos.forEach(d=>{users[d.name||d.user]=users[d.name||d.user]||[]; users[d.name||d.user].push(d)}); render(users); }
 async function borrar(nick){ let key=prompt('Clave de admin para borrar:'); if(!key) return;
 let r=await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nick,key})});
