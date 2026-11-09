@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 import json
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 from openpyxl import Workbook
@@ -183,106 +184,6 @@ HTML = """<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ZONEBOT • Panel de Control</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-base: #09090b;
-            --bg-card: linear-gradient(145deg, #18181b, #0f0f12);
-            --border: #27272a;
-            --text-main: #f4f4f5;
-            --text-muted: #a1a1aa;
-            --accent: #3b82f6;
-            --danger: #ef4444;
-            --success: #22c55e;
-            --warning: #f59e0b;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background: radial-gradient(circle at top, #180d1c 0%, var(--bg-base) 60%);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            padding: 30px 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-            min-height: 100vh;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 20px;
-            margin-bottom: 25px;
-        }
-        .logo-area h1 { 
-            font-size: 26px; 
-            font-weight: 700; 
-            letter-spacing: -0.5px;
-            background: linear-gradient(90deg, #fff, #a1a1aa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .logo-area p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
-        .badge-online {
-            background: rgba(34, 197, 94, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 0 15px rgba(34, 197, 94, 0.1);
-        }
-        .badge-online::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: var(--success);
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-bottom: 25px;
-        }
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transition: transform 0.2s, border-color 0.2s;
-        }
-        .card:hover { transform: translateY(-2px); border-color: #3f3f46; }
-        .card b { font-size: 28px; display: block; font-weight: 700; margin-bottom: 4px; }
-        .card span { color: var(--text-muted); font-size: 13px; font-weight: 500; }
-        .search-box {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: linear-¡Ahí está el detalle, bro! Ya vi por qué se sigue imprimiendo ese HTML de Cloudflare en la consola justo antes del `Exited with status 1`[cite: 12]. 
-
-Eso pasa porque en Render, cuando creaste el servicio, lo configuraste como un **Web Service** estándar, y Render o Cloudflare intentan hacerle una petición automática tipo web (ping) a la raíz `/` apenas enciende. Si Flask o el bot se demoran un microsegundo en arrancar los hilos (threads), el sistema lo interpreta como error y bota la aplicación.
-
-Para que corra a la primera sin que Render sufra con el hilo de Flask al arrancar, vamos a cambiar cómo inicia el script en las últimas líneas de tu archivo `bot.py`. 
-
-Copia este bloque limpio y reemplaza **únicamente las últimas líneas** de tu código (desde donde dice `app = Flask(__name__)` hasta el final del archivo):
-
-```python
-app = Flask(__name__)
-
-HTML = """<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ZONEBOT • Panel de Control</title>
-    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
     <style>
         :root {
             --bg-base: #09090b;
