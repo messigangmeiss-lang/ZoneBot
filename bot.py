@@ -15,33 +15,6 @@ LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "1567760248654143609"))
 ADMIN_KEY = os.getenv("ADMIN_KEY", "zone123")
 
 intents = discord.Intents.default()
-intents.message¡Ya falta un pelo para dejarlo perfecto, bro! El bot de Discord ya está funcionando de lujo con su Embed, pero ese error **500 Internal Server Error** en la web pasa por un detallito: Flask está buscando un archivo externo llamado `index.html` en tu repositorio de GitHub para mostrar la página, y si ese archivo no fue creado o quedó mal subido, el servidor revienta al intentar cargarlo.
-
-Para solucionarlo de una vez y evitar depender de archivos externos que se pierden, vamos a volver a meter el diseño web **directamente dentro del código de Python** (con comillas triples), asegurándonos de que esté limpio y sin errores.
-
-### ¿Qué tienes que hacer?
-
-1. **Borra el archivo `index.html` de GitHub** (si lo creaste antes), ya que no lo vamos a usar.
-2. Entra a tu archivo **`bot.py`**, borrátelo **absolutamente todo** y pega este código completo y corregido:
-
-```python
-import discord
-from discord import app_commands
-from discord.ext import commands
-import json
-import os
-import threading
-from datetime import datetime
-from pathlib import Path
-from openpyxl import Workbook
-from flask import Flask, request, jsonify, render_template_string
-
-TOKEN = os.getenv("TOKEN")
-GUILD_ID = int(os.getenv("GUILD_ID", "1567715818366832650"))
-LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "1567760248654143609"))
-ADMIN_KEY = os.getenv("ADMIN_KEY", "zone123")
-
-intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.presences = True
@@ -200,7 +173,6 @@ async def export(interaction: discord.Interaction):
     await interaction.response.send_message("📥 Aquí está tu backup en Excel:", file=discord.File(archivo), ephemeral=True)
     await mandar_log(f"📥 {interaction.user.mention} descargó el backup en Excel ({len(data)} nicks)", discord.Color.blue())
 
-# ========== DASHBOARD WEB INTEGRADO ==========
 app = Flask(__name__)
 
 HTML = """<!DOCTYPE html>
@@ -209,7 +181,7 @@ HTML = """<!DOCTYPE html>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ZONEBOT • Panel de Control</title>
-    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-base: #09090b;
