@@ -3,9 +3,11 @@ from discord import app_commands
 from discord.ext import commands
 import json
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 from openpyxl import Workbook
+from flask import Flask, request, jsonify, render_template_string
 
 TOKEN = os.getenv("TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID", "1567715818366832650"))
@@ -62,13 +64,11 @@ async def on_ready():
 @bot.tree.command(name="register", description="Registra tu nick")
 @app_commands.describe(nick="Tu nick en el juego")
 async def register(interaction: discord.Interaction, nick: str):
-    await interaction.response.defer(thinking=True)
-    
     nick = nick.strip()
     data = cargar()
     for r in data:
         if r.get("nick","").lower() == nick.lower():
-            await interaction.followup.send(f"❌ El nick **{nick}** ya está ocupado.", ephemeral=True)
+            await interaction.response.send_message(f"❌ El nick **{nick}** ya está ocupado.", ephemeral=True)
             return
             
     fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -92,7 +92,7 @@ async def register(interaction: discord.Interaction, nick: str):
         
     embed.set_footer(text="ZoneBot • Registro de nicks")
     
-    await interaction.followup.send(embed=embed)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
     await mandar_log(f"✅ {interaction.user.mention} registró el nick **{nick}**", discord.Color.green())
 
 @bot.tree.command(name="unregister", description="Borra uno de tus nicks")
@@ -173,4 +173,430 @@ async def export(interaction: discord.Interaction):
     await interaction.response.send_message("📥 Aquí está tu backup en Excel:", file=discord.File(archivo), ephemeral=True)
     await mandar_log(f"📥 {interaction.user.mention} descargó el backup en Excel ({len(data)} nicks)", discord.Color.blue())
 
-bot.run(TOKEN)
+app = Flask(__name__)
+
+HTML = """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ZONEBOT • Panel de Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #09090b;
+            --bg-card: linear-gradient(145deg, #18181b, #0f0f12);
+            --border: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #3b82f6;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: radial-gradient(circle at top, #180d1c 0%, var(--bg-base) 60%);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            padding: 30px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        .logo-area h1 { 
+            font-size: 26px; 
+            font-weight: 700; 
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #fff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo-area p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+        .badge-online {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.1);
+        }
+        .badge-online::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); border-color: #3f3f46; }
+        .card b { font-size: 28px; display: block; font-weight: 700; margin-bottom: 4px; }
+        .card span { color: var(--text-muted); font-size: 13px; font-weight: 500; }
+        .search-box {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: linear-gradient(145deg, #121216, #09090b);
+            color: var(--text-main);
+            font-size: 14px;
+            margin-bottom: 25px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-box:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+        .user-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .user-header h3 { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .user-count { background: #27272a; color: var(--text-muted); padding: 2px 8px; border-radius: 6px; font-size: 11px; }
+        .nick-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.05);
+            font-size: 13px;
+        }
+        .nick-row:last-child { border-bottom: none; }
+        .nick-info b { font-weight: 600; color: #fff; }
+        .nick-info small { display: block; color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+        .action-buttons { display: flex; gap: 6px; }
+        button.btn-edit {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button.btn-edit:hover { background: var(--warning); color: #000; }
+        button.btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button.btn-delete:hover { background: var(--danger); color: #fff; }
+        .empty-state { text-align: center; color: var(--text-muted); padding: 40px; font-size: 14px; grid-column: 1 / -1; }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: center; z-index: 100;
+        }
+        .modal {
+            background: #18181b; border: 1px solid var(--border); border-radius: 16px;
+            padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .modal h3 { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #fff; }
+        .modal input {
+            width: 100%; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border);
+            background: #09090b; color: #fff; font-size: 14px; margin-bottom: 12px; outline: none;
+        }
+        .modal input:focus { border-color: var(--accent); }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+        .modal-buttons button { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+        .btn-cancel { background: #27272a; color: var(--text-muted); }
+        .btn-cancel:hover { background: #3f3f46; color: #fff; }
+        .btn-save { background: var(--accent); color: #fff; }
+        .btn-save:hover { background: #2563eb; }
+
+        footer { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-area">
+            <h1>⚡ ZONEBOT PANEL</h1>
+            <p>Control de registros en vivo • Actualización automática</p>
+        </div>
+        <div class="badge-online">Sistema Activo</div>
+    </header>
+
+    <div class="cards">
+        <div class="card">
+            <b id="totalNicks">0</b>
+            <span>Nicks Totales</span>
+        </div>
+        <div class="card">
+            <b id="totalUsers">0</b>
+            <span>Colaboradores Activos</span>
+        </div>
+        <div class="card">
+            <b id="totalPay" style="color: var(--success);">$0</b>
+            <span>Total a Pagar ($4 / c-u)</span>
+        </div>
+    </div>
+
+    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar por nick o nombre de usuario..." oninput="filtrar()">
+
+    <div id="lista" class="grid-container"></div>
+
+    <div id="editModal" class="modal-overlay">
+        <div class="modal">
+            <h3>✏️ Editar Nick</h3>
+            <input type="hidden" id="editOldNick">
+            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">Nuevo Nick:</label>
+            <input type="text" id="editNewNick" placeholder="Escribe el nick corregido...">
+            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">Clave de Administrador:</label>
+            <input type="password" id="editKey" placeholder="Introduce tu clave de admin...">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-save" onclick="guardarEdicion()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        ZONEBOT • Panel interno de gestión de cuentas
+    </footer>
+
+<script>
+let datos = [];
+
+async function load() {
+    try {
+        let r = await fetch('/api/nicks');
+        datos = await r.json();
+        
+        document.getElementById('totalNicks').innerText = datos.length;
+        document.getElementById('totalPay').innerText = '$' + (datos.length * 4);
+        
+        let users = {};
+        datos.forEach(d => {
+            let uName = d.name || d.registrado_por || d.user || 'Desconocido';
+            users[uName] = users[uName] || [];
+            users[uName].push(d);
+        });
+        
+        document.getElementById('totalUsers').innerText = Object.keys(users).length;
+        render(users);
+    } catch (e) {
+        console.error("Error cargando datos", e);
+    }
+}
+
+function render(users) {
+    let q = document.getElementById('search').value.toLowerCase();
+    let html = '';
+    
+    for (let u in users) {
+        let nicks = users[u].filter(n => (n.nick + u).toLowerCase().includes(q));
+        if (!nicks.length) continue;
+        
+        html += `
+            <div class="user-card">
+                <div class="user-header">
+                    <h3>👤 ${u}</h3>
+                    <span class="user-count">${nicks.length} registradas</span>
+                </div>
+        `;
+        
+        nicks.forEach(n => {
+            html += `
+                <div class="nick-row">
+                    <div class="nick-info">
+                        <b>${n.nick}</b>
+                        <small>${n.fecha || 'Sin fecha'}</small>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-edit" onclick="abrirModal('${n.nick}')">Editar</button>
+                        <button class="btn-delete" onclick="borrar('${n.nick}')">Eliminar</button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+    }
+    
+    document.getElementById('lista').innerHTML = html || '<div class="empty-state">No se encontraron registros coincidentes.</div>';
+}
+
+function filtrar() {
+    let users = {};
+    datos.forEach(d => {
+        let uName = d.name || d.registrado_por || d.user || 'Desconocido';
+        users[uName] = users[uName] || [];
+        users[uName].push(d);
+    });
+    render(users);
+}
+
+function abrirModal(nick) {
+    document.getElementById('editOldNick').value = nick;
+    document.getElementById('editNewNick').value = nick;
+    document.getElementById('editKey').value = '';
+    document.getElementById('editModal').style.display = 'flex';
+    document.getElementById('editNewNick').focus();
+}
+
+function cerrarModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+async function guardarEdicion() {
+    let old_nick = document.getElementById('editOldNick').value;
+    let new_nick = document.getElementById('editNewNick').value.trim();
+    let key = document.getElementById('editKey').value;
+    
+    if (!new_nick) {
+        alert('❌ El nick no puede estar vacío.');
+        return;
+    }
+    if (!key) {
+        alert('❌ Introduce la clave de administrador.');
+        return;
+    }
+    
+    try {
+        let r = await fetch('/api/edit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old_nick, new_nick, key })
+        });
+        let j = await r.json();
+        alert(j.msg);
+        if (r.ok) {
+            cerrarModal();
+            load();
+        }
+    } catch (e) {
+        alert('❌ Error al conectar con el servidor.');
+    }
+}
+
+async function borrar(nick) {
+    let key = prompt('Introduce la clave de administrador para borrar este nick:');
+    if (!key) return;
+    
+    try {
+        let r = await fetch('/api/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nick, key })
+        });
+        let j = await r.json();
+        alert(j.msg);
+        load();
+    } catch (e) {
+        alert('❌ Error al conectar con el servidor.');
+    }
+}
+
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>
+"""
+
+@app.route("/")
+def home():
+    return render_template_string(HTML)
+
+@app.route("/api/nicks")
+def api_nicks():
+    return jsonify(cargar())
+
+@app.route("/api/edit", methods=["POST"])
+def api_edit():
+    d = request.json or {}
+    if d.get("key") != ADMIN_KEY:
+        return jsonify({"msg": "❌ Clave incorrecta"}), 403
+    
+    old_nick = d.get("old_nick", "").strip()
+    new_nick = d.get("new_nick", "").strip()
+    
+    if not old_nick or not new_nick:
+        return jsonify({"msg": "❌ Faltan datos"}), 400
+        
+    data = cargar()
+    encontrado = False
+    
+    for r in data:
+        if r.get("nick","").lower() == old_nick.lower():
+            r["nick"] = new_nick
+            encontrado = True
+            break
+            
+    if encontrado:
+        guardar(data)
+        return jsonify({"msg": f"✅ Nick actualizado a '{new_nick}'"})
+    return jsonify({"msg": "❌ No se encontró el nick original"}), 404
+
+@app.route("/api/delete", methods=["POST"])
+def api_delete():
+    d = request.json or {}
+    if d.get("key") != ADMIN_KEY:
+        return jsonify({"msg": "❌ Clave incorrecta"}), 403
+    data = cargar()
+    for i, r in enumerate(data):
+        if r.get("nick","").lower() == d.get("nick","").lower():
+            del data[i]
+            guardar(data)
+            return jsonify({"msg": f"✅ Borrado {d.get('nick')}"})
+    return jsonify({"msg": "❌ No existe"}), 404
+
+def run_web():
+    port = int(os.getenv("PORT", "10000"))
+    app.run(host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    threading.Thread(target=run_web, daemon=True).start()
+    bot.run(TOKEN)
