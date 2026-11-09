@@ -64,11 +64,14 @@ async def on_ready():
 @bot.tree.command(name="register", description="Registra tu nick")
 @app_commands.describe(nick="Tu nick en el juego")
 async def register(interaction: discord.Interaction, nick: str):
+    # 1. Avisamos a Discord al instante para evitar bloqueos
+    await interaction.response.defer(thinking=True)
+    
     nick = nick.strip()
     data = cargar()
     for r in data:
         if r.get("nick","").lower() == nick.lower():
-            await interaction.response.send_message(f"❌ El nick **{nick}** ya está ocupado.", ephemeral=True)
+            await interaction.followup.send(f"❌ El nick **{nick}** ya está ocupado.", ephemeral=True)
             return
             
     fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -92,9 +95,9 @@ async def register(interaction: discord.Interaction, nick: str):
         
     embed.set_footer(text="ZoneBot • Registro de nicks")
     
-    await interaction.response.send_message(embed=embed)
+    # 2. Enviamos el embed público usando followup sin errores
+    await interaction.followup.send(embed=embed)
     await mandar_log(f"✅ {interaction.user.mention} registró el nick **{nick}**", discord.Color.green())
-
 @bot.tree.command(name="unregister", description="Borra uno de tus nicks")
 @app_commands.describe(nick="Nick que quieres borrar")
 async def unregister(interaction: discord.Interaction, nick: str):
