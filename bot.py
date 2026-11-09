@@ -92,7 +92,7 @@ async def register(interaction: discord.Interaction, nick: str):
         
     embed.set_footer(text="ZoneBot • Registro de nicks")
     
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
     await mandar_log(f"✅ {interaction.user.mention} registró el nick **{nick}**", discord.Color.green())
 
 @bot.tree.command(name="unregister", description="Borra uno de tus nicks")
