@@ -71,9 +71,30 @@ async def register(interaction: discord.Interaction, nick: str):
         if r.get("nick","").lower() == nick.lower():
             await interaction.response.send_message(f"❌ El nick **{nick}** ya está ocupado.", ephemeral=True)
             return
-    data.append({"nick": nick, "user": str(interaction.user.id), "name": str(interaction.user), "fecha": datetime.now().strftime("%d/%m/%Y %H:%M")})
+            
+    fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M")
+    data.append({"nick": nick, "user": str(interaction.user.id), "name": str(interaction.user), "fecha": fecha_actual})
     guardar(data)
-    await interaction.response.send_message(f"✅ Registraste el nick **{nick}**", ephemeral=True)
+    
+    # Contar nicks del usuario para el embed
+    nicks_usuario = [r["nick"] for r in data if r.get("user") == str(interaction.user.id)]
+    
+    embed = discord.Embed(
+        title="✅ Nuevo registro",
+        color=discord.Color.green(),
+        timestamp=datetime.now()
+    )
+    embed.add_field(name="📄 Nick:", value=nick, inline=False)
+    embed.add_field(name="👤 Usuario:", value=interaction.user.mention, inline=False)
+    embed.add_field(name="📅 Fecha:", value=fecha_actual, inline=False)
+    embed.add_field(name=f"📋 Tus nicks registrados ({len(nicks_usuario)}):", value=", ".join(nicks_usuario), inline=False)
+    
+    if interaction.user.avatar:
+        embed.set_thumbnail(url=interaction.user.avatar.url)
+        
+    embed.set_footer(text="ZoneBot • Registro de nicks")
+    
+    await interaction.response.send_message(embed=embed, ephemeral=True)
     await mandar_log(f"✅ **{interaction.user.mention}** registró el nick **{nick}**", discord.Color.green())
 
 @bot.tree.command(name="unregister", description="Borra uno de tus nicks")
@@ -154,7 +175,7 @@ async def export(interaction: discord.Interaction):
     await interaction.response.send_message("📥 Aquí está tu backup en Excel:", file=discord.File(archivo), ephemeral=True)
     await mandar_log(f"📥 **{interaction.user.mention}** descargó el backup en Excel ({len(data)} nicks)", discord.Color.blue())
 
-# ========== DASHBOARD WEB CON DEGRADADOS Y EDITAR ==========
+# ========== DASHBOARD WEB CON MODAL DE EDITAR Y DEGRADADOS ==========
 app = Flask(__name__)
 
 HTML = """
@@ -163,7 +184,7 @@ HTML = """
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ZoneBot • Panel de Control</title>
+    <title>ZONEBOT • Panel de Control</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -272,252 +293,4 @@ HTML = """
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-        }
-        .user-header h3 { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-        .user-count { background: #27272a; color: var(--text-muted); padding: 2px 8px; border-radius: 6px; font-size: 11px; }
-        .nick-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px dashed rgba(255,255,255,0.05);
-            font-size: 13px;
-        }
-        .nick-row:last-child { border-bottom: none; }
-        .nick-info b { font-weight: 600; color: #fff; }
-        .nick-info small { display: block; color: var(--text-muted); font-size: 11px; margin-top: 2px; }
-        .action-buttons { display: flex; gap: 6px; }
-        button.btn-edit {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button.btn-edit:hover { background: var(--warning); color: #000; }
-        button.btn-delete {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button.btn-delete:hover { background: var(--danger); color: #fff; }
-        .empty-state { text-align: center; color: var(--text-muted); padding: 40px; font-size: 14px; grid-column: 1 / -1; }
-        footer { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px; }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="logo-area">
-            <h1>⚡ ZONEBOT PANEL</h1>
-            <p>Control de registros en vivo • Actualización automática</p>
-        </div>
-        <div class="badge-online">Sistema Activo</div>
-    </header>
-
-    <div class="cards">
-        <div class="card">
-            <b id="totalNicks">0</b>
-            <span>Nicks Totales</span>
-        </div>
-        <div class="card">
-            <b id="totalUsers">0</b>
-            <span>Colaboradores Activos</span>
-        </div>
-        <div class="card">
-            <b id="totalPay" style="color: var(--success);">$0</b>
-            <span>Total a Pagar ($4 / c-u)</span>
-        </div>
-    </div>
-
-    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar por nick o nombre de usuario..." oninput="filtrar()">
-
-    <div id="lista" class="grid-container"></div>
-
-    <footer>
-        ZONEBOT • Panel interno de gestión de cuentas
-    </footer>
-
-<script>
-let datos = [];
-
-async function load() {
-    try {
-        let r = await fetch('/api/nicks');
-        datos = await r.json();
-        
-        document.getElementById('totalNicks').innerText = datos.length;
-        document.getElementById('totalPay').innerText = '$' + (datos.length * 4);
-        
-        let users = {};
-        datos.forEach(d => {
-            let uName = d.name || d.registrado_por || d.user || 'Desconocido';
-            users[uName] = users[uName] || [];
-            users[uName].push(d);
-        });
-        
-        document.getElementById('totalUsers').innerText = Object.keys(users).length;
-        render(users);
-    } catch (e) {
-        console.error("Error cargando datos", e);
-    }
-}
-
-function render(users) {
-    let q = document.getElementById('search').value.toLowerCase();
-    let html = '';
-    
-    for (let u in users) {
-        let nicks = users[u].filter(n => (n.nick + u).toLowerCase().includes(q));
-        if (!nicks.length) continue;
-        
-        html += `
-            <div class="user-card">
-                <div class="user-header">
-                    <h3>👤 ${u}</h3>
-                    <span class="user-count">${nicks.length} registradas</span>
-                </div>
-        `;
-        
-        nicks.forEach(n => {
-            html += `
-                <div class="nick-row">
-                    <div class="nick-info">
-                        <b>${n.nick}</b>
-                        <small>${n.fecha || 'Sin fecha'}</small>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn-edit" onclick="editar('${n.nick}')">Editar</button>
-                        <button class="btn-delete" onclick="borrar('${n.nick}')">Eliminar</button>
-                    </div>
-                </div>
-            `;
-        });
-        
-        html += `</div>`;
-    }
-    
-    document.getElementById('lista').innerHTML = html || '<div class="empty-state">No se encontraron registros coincidentes.</div>';
-}
-
-function filtrar() {
-    let users = {};
-    datos.forEach(d => {
-        let uName = d.name || d.registrado_por || d.user || 'Desconocido';
-        users[uName] = users[uName] || [];
-        users[uName].push(d);
-    });
-    render(users);
-}
-
-async function editar(oldNick) {
-    let nuevoNick = prompt('Introduce el nuevo nick corregido:', oldNick);
-    if (!nuevoNick || nuevoNick.trim() === '') return;
-    
-    let key = prompt('Introduce la clave de administrador para guardar cambios:');
-    if (!key) return;
-    
-    try {
-        let r = await fetch('/api/edit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ old_nick: oldNick, new_nick: nuevoNick.trim(), key })
-        });
-        let j = await r.json();
-        alert(j.msg);
-        load();
-    } catch (e) {
-        alert('❌ Error al conectar con el servidor.');
-    }
-}
-
-async function borrar(nick) {
-    let key = prompt('Introduce la clave de administrador para borrar este nick:');
-    if (!key) return;
-    
-    try {
-        let r = await fetch('/api/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nick, key })
-        });
-        let j = await r.json();
-        alert(j.msg);
-        load();
-    } catch (e) {
-        alert('❌ Error al conectar con el servidor.');
-    }
-}
-
-load();
-setInterval(load, 10000);
-</script>
-</body>
-</html>
-"""
-
-@app.route("/")
-def home():
-    return render_template_string(HTML)
-
-@app.route("/api/nicks")
-def api_nicks():
-    return jsonify(cargar())
-
-@app.route("/api/edit", methods=["POST"])
-def api_edit():
-    d = request.json or {}
-    if d.get("key") != ADMIN_KEY:
-        return jsonify({"msg": "❌ Clave incorrecta"}), 403
-    
-    old_nick = d.get("old_nick", "").strip()
-    new_nick = d.get("new_nick", "").strip()
-    
-    if not old_nick or not new_nick:
-        return jsonify({"msg": "❌ Faltan datos"}), 400
-        
-    data = cargar()
-    encontrado = False
-    
-    for r in data:
-        if r.get("nick","").lower() == old_nick.lower():
-            r["nick"] = new_nick
-            encontrado = True
-            break
-            
-    if encontrado:
-        guardar(data)
-        return jsonify({"msg": f"✅ Nick actualizado a '{new_nick}'"})
-    return jsonify({"msg": "❌ No se encontró el nick original"}), 404
-
-@app.route("/api/delete", methods=["POST"])
-def api_delete():
-    d = request.json or {}
-    if d.get("key") != ADMIN_KEY:
-        return jsonify({"msg": "❌ Clave incorrecta"}), 403
-    data = cargar()
-    for i, r in enumerate(data):
-        if r.get("nick","").lower() == d.get("nick","").lower():
-            del data[i]
-            guardar(data)
-            return jsonify({"msg": f"✅ Borrado {d.get('nick')}"})
-    return jsonify({"msg": "❌ No existe"}), 404
-
-def run_web():
-    port = int(os.getenv("PORT", "10000"))
-    app.run(host="0.0.0.0", port=port)
-
-if __name__ == "__main__":
-    threading.Thread(target=run_web, daemon=True).start()
-    bot.run(TOKEN)
+            padding-bottom:
