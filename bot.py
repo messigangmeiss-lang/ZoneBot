@@ -347,7 +347,7 @@ async function load() {
         
         let users = {};
         datos.forEach(d => {
-            let uName = d.name || d.user;
+            let uName = d.name || d.registrado_por || d.user || 'Desconocido';
             users[uName] = users[uName] || [];
             users[uName].push(d);
         });
@@ -396,7 +396,7 @@ function render(users) {
 function filtrar() {
     let users = {};
     datos.forEach(d => {
-        let uName = d.name || d.user;
+        let uName = d.name || d.registrado_por || d.user || 'Desconocido';
         users[uName] = users[uName] || [];
         users[uName].push(d);
     });
