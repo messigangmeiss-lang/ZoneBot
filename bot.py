@@ -9,16 +9,15 @@ from pathlib import Path
 from openpyxl import Workbook
 from flask import Flask, request, jsonify, render_template_string
 
-TOKEN = os.getenv("TOKEN") or os.getenv("DISCORD_TOKEN")
-GUILD_ID = int(os.getenv("GUILD_ID", "1564463273615560706"))
-LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "1567935320803250227"))
-ADMIN_KEY = os.getenv("ADMIN_KEY", "zone123") # clave para borrar desde la web
+TOKEN = os.getenv("TOKEN")
+GUILD_ID = int(os.getenv("GUILD_ID", "1567715818366832650"))
+LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "1567760248654143609"))
+ADMIN_KEY = os.getenv("ADMIN_KEY", "zone123") # clave para borrar y editar desde la web
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.presences = True
-
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 nicks_file = Path("nicks.json")
@@ -29,7 +28,6 @@ def cargar():
     try:
         with open(nicks_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Compatibilidad: convierte formato viejo a nuevo
             out = []
             for r in data:
                 if "registrado_por" in r:
@@ -52,13 +50,12 @@ async def mandar_log(texto, color=discord.Color.greyple()):
         embed = discord.Embed(description=texto, color=color)
         await canal.send(embed=embed)
 
-# ========== BOT COMMANDS (igual que antes) ==========
+# ========== BOT COMMANDS ==========
 @bot.event
 async def on_ready():
     print(f"Bot conectado como {bot.user}")
     try:
         guild = discord.Object(id=GUILD_ID)
-        # Ahora vuelve a subir los buenos
         bot.tree.copy_global_to(guild=guild)
         synced = await bot.tree.sync(guild=guild)
         print(f"Sincronizados {len(synced)} comandos")
@@ -76,16 +73,9 @@ async def register(interaction: discord.Interaction, nick: str):
             return
     data.append({"nick": nick, "user": str(interaction.user.id), "name": str(interaction.user), "fecha": datetime.now().strftime("%d/%m/%Y %H:%M")})
     guardar(data)
-            
-    mis_nicks = [r.get("nick","") for r in data if r.get("user") == str(interaction.user.id)]
-    embed = discord.Embed(title="✅ Nuevo registro", color=0x2ecc71)
-    embed.add_field(name="🧾 Nick:", value=nick, inline=False)
-    embed.add_field(name="👤 Usuario:", value=f"@{interaction.user.name}", inline=False)
-    embed.add_field(name="📅 Fecha:", value=datetime.now().strftime("%d/%m/%Y %H:%M"), inline=False)
-    embed.add_field(name=f"📋 Tus nicks registrados ({len(mis_nicks)}):", value=", ".join(mis_nicks), inline=False)
-    embed.set_thumbnail(url=interaction.user.display_avatar.url)
-    embed.set_footer(text="ZoneBot • Registro de nicks")
-    await interaction.response.send_message(embed=embed, ephemeral=False)
+    await interaction.response.send_message(f"✅ Registraste el nick **{nick}**", ephemeral=True)
+    await mandar_log(f"✅ **{interaction.user.mention}** registró el nick **{nick}**", discord.Color.green())
+
 @bot.tree.command(name="unregister", description="Borra uno de tus nicks")
 @app_commands.describe(nick="Nick que quieres borrar")
 async def unregister(interaction: discord.Interaction, nick: str):
@@ -105,11 +95,11 @@ async def unregister(interaction: discord.Interaction, nick: str):
 @bot.tree.command(name="mios", description="Ver tus nicks registrados")
 async def mios(interaction: discord.Interaction):
     data = cargar()
-    mios = [r["nick"] for r in data if r.get("user") == str(interaction.user.id)]
-    if not mios:
+    mios_list = [r["nick"] for r in data if r.get("user") == str(interaction.user.id)]
+    if not mios_list:
         await interaction.response.send_message("No tienes nicks registrados.", ephemeral=True)
         return
-    await interaction.response.send_message("Tus nicks:\n" + "\n".join([f"- **{n}**" for n in mios]), ephemeral=True)
+    await interaction.response.send_message("Tus nicks:\n" + "\n".join([f"- **{n}**" for n in mios_list]), ephemeral=True)
 
 @bot.tree.command(name="buscar", description="Buscar si un nick está ocupado")
 @app_commands.describe(nick="Nick a buscar")
@@ -164,7 +154,7 @@ async def export(interaction: discord.Interaction):
     await interaction.response.send_message("📥 Aquí está tu backup en Excel:", file=discord.File(archivo), ephemeral=True)
     await mandar_log(f"📥 **{interaction.user.mention}** descargó el backup en Excel ({len(data)} nicks)", discord.Color.blue())
 
-# ========== DASHBOARD WEB - ESTO ES LO QUE MANTIENE PRENDIDO EL BOT ==========
+# ========== DASHBOARD WEB CON DEGRADADOS Y EDITAR ==========
 app = Flask(__name__)
 
 HTML = """
@@ -178,22 +168,24 @@ HTML = """
     <style>
         :root {
             --bg-base: #09090b;
-            --bg-card: #121216;
+            --bg-card: linear-gradient(145deg, #18181b, #0f0f12);
             --border: #27272a;
             --text-main: #f4f4f5;
             --text-muted: #a1a1aa;
             --accent: #3b82f6;
             --danger: #ef4444;
             --success: #22c55e;
+            --warning: #f59e0b;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: var(--bg-base);
+            background: radial-gradient(circle at top, #180d1c 0%, var(--bg-base) 60%);
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             padding: 30px 20px;
             max-width: 1200px;
             margin: 0 auto;
+            min-height: 100vh;
         }
         header {
             display: flex;
@@ -203,19 +195,27 @@ HTML = """
             padding-bottom: 20px;
             margin-bottom: 25px;
         }
-        .logo-area h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .logo-area h1 { 
+            font-size: 26px; 
+            font-weight: 700; 
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #fff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
         .logo-area p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
         .badge-online {
             background: rgba(34, 197, 94, 0.1);
             color: var(--success);
             border: 1px solid rgba(34, 197, 94, 0.2);
-            padding: 6px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
             display: flex;
             align-items: center;
             gap: 6px;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.1);
         }
         .badge-online::before {
             content: '';
@@ -232,38 +232,40 @@ HTML = """
             margin-bottom: 25px;
         }
         .card {
-            background-color: var(--bg-card);
+            background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 20px;
-            transition: border-color 0.2s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.2s, border-color 0.2s;
         }
-        .card:hover { border-color: #3f3f46; }
+        .card:hover { transform: translateY(-2px); border-color: #3f3f46; }
         .card b { font-size: 28px; display: block; font-weight: 700; margin-bottom: 4px; }
         .card span { color: var(--text-muted); font-size: 13px; font-weight: 500; }
         .search-box {
             width: 100%;
             padding: 14px 16px;
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--border);
-            background-color: var(--bg-card);
+            background: linear-gradient(145deg, #121216, #09090b);
             color: var(--text-main);
             font-size: 14px;
             margin-bottom: 25px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .search-box:focus { border-color: var(--accent); }
+        .search-box:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
         .grid-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 16px;
         }
         .user-card {
-            background-color: var(--bg-card);
+            background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 18px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
         }
         .user-header {
             display: flex;
@@ -279,13 +281,26 @@ HTML = """
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
+            padding: 10px 0;
             border-bottom: 1px dashed rgba(255,255,255,0.05);
             font-size: 13px;
         }
         .nick-row:last-child { border-bottom: none; }
         .nick-info b { font-weight: 600; color: #fff; }
         .nick-info small { display: block; color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+        .action-buttons { display: flex; gap: 6px; }
+        button.btn-edit {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button.btn-edit:hover { background: var(--warning); color: #000; }
         button.btn-delete {
             background: rgba(239, 68, 68, 0.1);
             color: var(--danger);
@@ -305,7 +320,7 @@ HTML = """
 <body>
     <header>
         <div class="logo-area">
-            <h1>⚡ ZONEBO PANEL</h1>
+            <h1>⚡ ZONEBOT PANEL</h1>
             <p>Control de registros en vivo • Actualización automática</p>
         </div>
         <div class="badge-online">Sistema Activo</div>
@@ -331,7 +346,7 @@ HTML = """
     <div id="lista" class="grid-container"></div>
 
     <footer>
-        ZONEBO • Panel interno de gestión de cuentas
+        ZONEBOT • Panel interno de gestión de cuentas
     </footer>
 
 <script>
@@ -382,7 +397,10 @@ function render(users) {
                         <b>${n.nick}</b>
                         <small>${n.fecha || 'Sin fecha'}</small>
                     </div>
-                    <button class="btn-delete" onclick="borrar('${n.nick}')">Eliminar</button>
+                    <div class="action-buttons">
+                        <button class="btn-edit" onclick="editar('${n.nick}')">Editar</button>
+                        <button class="btn-delete" onclick="borrar('${n.nick}')">Eliminar</button>
+                    </div>
                 </div>
             `;
         });
@@ -401,6 +419,27 @@ function filtrar() {
         users[uName].push(d);
     });
     render(users);
+}
+
+async function editar(oldNick) {
+    let nuevoNick = prompt('Introduce el nuevo nick corregido:', oldNick);
+    if (!nuevoNick || nuevoNick.trim() === '') return;
+    
+    let key = prompt('Introduce la clave de administrador para guardar cambios:');
+    if (!key) return;
+    
+    try {
+        let r = await fetch('/api/edit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old_nick: oldNick, new_nick: nuevoNick.trim(), key })
+        });
+        let j = await r.json();
+        alert(j.msg);
+        load();
+    } catch (e) {
+        alert('❌ Error al conectar con el servidor.');
+    }
 }
 
 async function borrar(nick) {
@@ -427,6 +466,7 @@ setInterval(load, 10000);
 </body>
 </html>
 """
+
 @app.route("/")
 def home():
     return render_template_string(HTML)
@@ -434,6 +474,32 @@ def home():
 @app.route("/api/nicks")
 def api_nicks():
     return jsonify(cargar())
+
+@app.route("/api/edit", methods=["POST"])
+def api_edit():
+    d = request.json or {}
+    if d.get("key") != ADMIN_KEY:
+        return jsonify({"msg": "❌ Clave incorrecta"}), 403
+    
+    old_nick = d.get("old_nick", "").strip()
+    new_nick = d.get("new_nick", "").strip()
+    
+    if not old_nick or not new_nick:
+        return jsonify({"msg": "❌ Faltan datos"}), 400
+        
+    data = cargar()
+    encontrado = False
+    
+    for r in data:
+        if r.get("nick","").lower() == old_nick.lower():
+            r["nick"] = new_nick
+            encontrado = True
+            break
+            
+    if encontrado:
+        guardar(data)
+        return jsonify({"msg": f"✅ Nick actualizado a '{new_nick}'"})
+    return jsonify({"msg": "❌ No se encontró el nick original"}), 404
 
 @app.route("/api/delete", methods=["POST"])
 def api_delete():
@@ -451,22 +517,6 @@ def api_delete():
 def run_web():
     port = int(os.getenv("PORT", "10000"))
     app.run(host="0.0.0.0", port=port)
-@bot.tree.command(name="mynicks", description="Ver tus nicks registrados")
-async def mynicks(interaction: discord.Interaction):
-    data = cargar()
-    mis_nicks = [r for r in data if r.get("user") == str(interaction.user.id)]
-    if not mis_nicks:
-        embed = discord.Embed(title="📋 Tus nicks", description="No tienes ningún nick registrado todavía.", color=0xe74c3c)
-        embed.set_thumbnail(url=interaction.user.display_avatar.url)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-        return
-    lista = "\n".join([f"**{i+1}.** {r.get('nick','')} — {r.get('fecha','')}" for i, r in enumerate(mis_nicks)])
-    embed = discord.Embed(title="📋 Tus nicks registrados", description=lista, color=0x3498db)
-    embed.add_field(name="📊 Total:", value=f"{len(mis_nicks)} nicks", inline=False)
-    embed.set_thumbnail(url=interaction.user.display_avatar.url)
-    embed.set_footer(text="ZoneBot • Registro de nicks")
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
 
 if __name__ == "__main__":
     threading.Thread(target=run_web, daemon=True).start()
